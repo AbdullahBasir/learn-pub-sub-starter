@@ -33,10 +33,13 @@ func main() {
 	err = pubsub.PublishJSON(con, routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{
 		IsPaused: true,
 	})
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
 	<-signalChan
 
-	fmt.Println("Program is shutting down")
+	fmt.Println("Program is paused")
 }
