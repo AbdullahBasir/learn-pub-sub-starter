@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/AbdullahBasir/learn-pub-sub-starter/internal/pubsub"
+	"github.com/AbdullahBasir/learn-pub-sub-starter/internal/routing"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -22,6 +24,15 @@ func main() {
 	defer newCon.Close()
 
 	fmt.Println("Connection is Successful")
+
+	con, err := newCon.Channel()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = pubsub.PublishJSON(con, routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{
+		IsPaused: true,
+	})
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
