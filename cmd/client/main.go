@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
-	"os/signal"
 
 	"github.com/AbdullahBasir/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/AbdullahBasir/learn-pub-sub-starter/internal/pubsub"
@@ -34,8 +32,43 @@ func main() {
 		log.Fatalf("could not declare and bind queue, %v", err)
 	}
 
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, os.Interrupt)
-	<-signalChan
+	gameState := gamelogic.NewGameState(username)
 
+	for {
+		words := gamelogic.GetInput()
+		if len(words) < 1 {
+			continue
+		}
+
+		if words[0] == "spawn" {
+			err = gameState.CommandSpawn(words)
+			if err != nil {
+				continue
+			}
+
+		} else if words[0] == "move" {
+			_, err = gameState.CommandMove(words)
+			if err != nil {
+				continue
+			}
+			fmt.Printf("Move made\n")
+
+		} else if words[0] == "status" {
+			gameState.CommandStatus()
+
+		} else if words[0] == "help" {
+			gamelogic.PrintClientHelp()
+
+		} else if words[0] == "spam" {
+			fmt.Print("Spamming not allowed yet!\n")
+
+		} else if words[0] == "quit" {
+			gamelogic.PrintQuit()
+			break
+
+		} else {
+			fmt.Print("error, command not found\n")
+			continue
+		}
+	}
 }
