@@ -27,13 +27,12 @@ func main() {
 		log.Fatalf("could not to find client %v", err)
 	}
 
-	_, queue, err := pubsub.DeclareAndBind(newCon, routing.ExchangePerilDirect, routing.PauseKey+"."+username, routing.PauseKey, pubsub.Transient)
+	gameState := gamelogic.NewGameState(username)
+
+	err = pubsub.SubscribeJSON(newCon, routing.ExchangePerilDirect, "pause."+username, routing.PauseKey, pubsub.Transient, handlerPause(gameState))
 	if err != nil {
 		log.Fatalf("could not declare and bind queue, %v", err)
 	}
-	fmt.Printf("Queue %v declared and bound!\n", queue.Name)
-
-	gameState := gamelogic.NewGameState(username)
 
 	for {
 		words := gamelogic.GetInput()

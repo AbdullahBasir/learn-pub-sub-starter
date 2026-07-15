@@ -61,7 +61,8 @@ func main() {
 		} else if words[0] == "quit" {
 			log.Print("exiting")
 			break
+		} else {
+			log.Print("invalid command")
 		}
-		log.Print("invalid command")
 	}
 }
