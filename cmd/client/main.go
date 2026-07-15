@@ -27,10 +27,11 @@ func main() {
 		log.Fatalf("could not to find client %v", err)
 	}
 
-	_, _, err = pubsub.DeclareAndBind(newCon, routing.ExchangePerilDirect, routing.PauseKey+"."+username, routing.PauseKey, pubsub.Transient)
+	_, queue, err := pubsub.DeclareAndBind(newCon, routing.ExchangePerilDirect, routing.PauseKey+"."+username, routing.PauseKey, pubsub.Transient)
 	if err != nil {
 		log.Fatalf("could not declare and bind queue, %v", err)
 	}
+	fmt.Printf("Queue %v declared and bound!\n", queue.Name)
 
 	gameState := gamelogic.NewGameState(username)
 

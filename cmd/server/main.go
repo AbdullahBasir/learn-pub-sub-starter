@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
-	"os/signal"
 
 	"github.com/AbdullahBasir/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/AbdullahBasir/learn-pub-sub-starter/internal/pubsub"
@@ -30,6 +28,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	_, queue, err := pubsub.DeclareAndBind(newCon, routing.ExchangePerilTopic, routing.GameLogSlug, routing.GameLogSlug+".*", pubsub.Durable)
+	if err != nil {
+		log.Fatalf("could not declare and bind queue, %v", err)
+	}
+	fmt.Printf("Queue %v declared and bound!\n", queue.Name)
 
 	gamelogic.PrintServerHelp()
 
@@ -60,10 +64,4 @@ func main() {
 		}
 		log.Print("invalid command")
 	}
-
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, os.Interrupt)
-	<-signalChan
-
-	fmt.Println("Program is paused")
 }
