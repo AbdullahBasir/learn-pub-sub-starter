@@ -22,6 +22,11 @@ func main() {
 
 	defer newCon.Close()
 
+	con, err := newCon.Channel()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	username, err := gamelogic.ClientWelcome()
 	if err != nil {
 		log.Fatalf("could not to find client %v", err)
@@ -29,7 +34,7 @@ func main() {
 
 	gameState := gamelogic.NewGameState(username)
 
-	err = pubsub.SubscribeJSON(newCon, routing.ExchangePerilDirect, "pause."+username, routing.PauseKey, pubsub.Transient, handlerPause(gameState))
+	err = pubsub.SubscribeJSON(newCon, routing.ExchangePerilTopic, "army_moves."+username, "army_moves.*", pubsub.Transient, handlerMove(gameState))
 	if err != nil {
 		log.Fatalf("could not declare and bind queue, %v", err)
 	}
@@ -47,11 +52,15 @@ func main() {
 			}
 
 		} else if words[0] == "move" {
-			_, err = gameState.CommandMove(words)
+			armyMove, err := gameState.CommandMove(words)
 			if err != nil {
 				continue
 			}
-			fmt.Printf("Move made\n")
+			err = pubsub.PublishJSON(con, routing.ExchangePerilTopic, "army_moves."+username, armyMove)
+			if err != nil {
+				log.Fatal(err)
+			}
+			log.Print("The move was successfully made!\n")
 
 		} else if words[0] == "status" {
 			gameState.CommandStatus()

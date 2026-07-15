@@ -17,12 +17,12 @@ func SubscribeJSON[T any](
 	handler func(T),
 ) error {
 
-	ch, _, err := DeclareAndBind(conn, exchange, queueName, key, queueType)
+	ch, queue, err := DeclareAndBind(conn, exchange, queueName, key, queueType)
 	if err != nil {
 		return fmt.Errorf("could not declare and bind queue, %v", err)
 	}
 
-	deliveries, err := ch.Consume(queueName, "", false, false, false, false, nil)
+	deliveries, err := ch.Consume(queue.Name, "", false, false, false, false, nil)
 	if err != nil {
 		return fmt.Errorf("could not deliver messages, %v", err)
 	}
