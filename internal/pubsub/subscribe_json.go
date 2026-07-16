@@ -8,13 +8,21 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
+type AckType string
+
+const (
+	Ack         AckType = "Ack"
+	NackRequeue AckType = "NackRequeue"
+	NackDiscard AckType = "NackDiscard"
+)
+
 func SubscribeJSON[T any](
 	conn *amqp.Connection,
 	exchange,
 	queueName,
 	key string,
 	queueType SimpleQueueType,
-	handler func(T),
+	handler func(T) AckType,
 ) error {
 
 	ch, queue, err := DeclareAndBind(conn, exchange, queueName, key, queueType)
@@ -36,14 +44,29 @@ func SubscribeJSON[T any](
 				continue
 			}
 
-			handler(message)
-
-			err = delivery.Ack(false)
-			if err != nil {
-				log.Printf("could not deliver message: %v", err)
+			handle := handler(message)
+			switch handle {
+			case Ack:
+				err = delivery.Ack(false)
+				log.Print("message was acknowledged")
+				if err != nil {
+					log.Printf("could not acknowledge message: %v", err)
+				}
+			case NackRequeue:
+				err = delivery.Nack(false, true)
+				log.Print("message was requeued")
+				if err != nil {
+					log.Printf("could not requeue message: %v", err)
+				}
+			case NackDiscard:
+				err = delivery.Nack(false, false)
+				log.Print("message was not acknowledged or requeued")
+				if err != nil {
+					log.Printf("could not discard message: %v", err)
+				}
 			}
+
 		}
 	}()
-
 	return nil
 }
