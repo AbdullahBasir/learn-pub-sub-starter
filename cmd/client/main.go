@@ -34,7 +34,17 @@ func main() {
 
 	gameState := gamelogic.NewGameState(username)
 
-	err = pubsub.SubscribeJSON(newCon, routing.ExchangePerilTopic, "army_moves."+username, "army_moves.*", pubsub.Transient, handlerMove(gameState))
+	err = pubsub.SubscribeJSON(newCon, routing.ExchangePerilTopic, routing.ArmyMovesPrefix+"."+username, routing.ArmyMovesPrefix+".*", pubsub.Transient, handlerMove(gameState, con))
+	if err != nil {
+		log.Fatalf("could not declare and bind queue, %v", err)
+	}
+
+	err = pubsub.SubscribeJSON(newCon, routing.ExchangePerilDirect, routing.PauseKey+"."+username, routing.PauseKey, pubsub.Transient, handlerPause(gameState))
+	if err != nil {
+		log.Fatalf("could not declare and bind queue, %v", err)
+	}
+
+	err = pubsub.SubscribeJSON(newCon, routing.ExchangePerilTopic, routing.WarRecognitionsPrefix, routing.WarRecognitionsPrefix+".*", pubsub.Durable, handlerWar(gameState))
 	if err != nil {
 		log.Fatalf("could not declare and bind queue, %v", err)
 	}
