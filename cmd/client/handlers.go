@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/AbdullahBasir/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/AbdullahBasir/learn-pub-sub-starter/internal/pubsub"
@@ -48,10 +49,17 @@ func handlerMove(gs *gamelogic.GameState, ch *amqp.Channel) func(gamelogic.ArmyM
 	}
 }
 
-func handlerWar(gs *gamelogic.GameState) func(gamelogic.RecognitionOfWar) pubsub.AckType {
+func handlerWar(gs *gamelogic.GameState, ch *amqp.Channel) func(gamelogic.RecognitionOfWar) pubsub.AckType {
 	return func(war gamelogic.RecognitionOfWar) pubsub.AckType {
 		defer fmt.Print("> ")
-		outcome, _, _ := gs.HandleWar(war)
+		outcome, winner, loser := gs.HandleWar(war)
+
+		message := ""
+		gameL := &routing.GameLog{
+			CurrentTime: time.Now(),
+			Message:     message,
+			Username:    war.Attacker.Username,
+		}
 
 		switch outcome {
 		case gamelogic.WarOutcomeNotInvolved:
@@ -61,17 +69,29 @@ func handlerWar(gs *gamelogic.GameState) func(gamelogic.RecognitionOfWar) pubsub
 			log.Print("discarded the message")
 			return pubsub.NackDiscard
 		case gamelogic.WarOutcomeOpponentWon:
-			log.Print("acknowledged the message")
-			return pubsub.Ack
+			gameL.Message = fmt.Sprintf("%s won a war against %s", winner, loser)
+			result := PublishGameLog(ch, routing.ExchangePerilTopic, routing.GameLogSlug+"."+gameL.Username, gameL)
+			return result
 		case gamelogic.WarOutcomeYouWon:
-			log.Print("acknowledged the message")
-			return pubsub.Ack
+			gameL.Message = fmt.Sprintf("%s won a war against %s", winner, loser)
+			result := PublishGameLog(ch, routing.ExchangePerilTopic, routing.GameLogSlug+"."+gameL.Username, gameL)
+			return result
 		case gamelogic.WarOutcomeDraw:
-			log.Print("acknowledged the message")
-			return pubsub.Ack
+			gameL.Message = fmt.Sprintf("A war between %s and %s resulted in a draw", winner, loser)
+			result := PublishGameLog(ch, routing.ExchangePerilTopic, routing.GameLogSlug+"."+gameL.Username, gameL)
+			return result
 		default:
 			log.Print("discarded the message")
 			return pubsub.NackDiscard
 		}
 	}
+}
+
+func PublishGameLog(channel *amqp.Channel, exchange string, key string, gameLog *routing.GameLog) pubsub.AckType {
+	err := pubsub.PublishGob(channel, exchange, key, gameLog)
+	if err != nil {
+		log.Printf("could not publish game log: %v", err)
+		return pubsub.NackRequeue
+	}
+	return pubsub.Ack
 }

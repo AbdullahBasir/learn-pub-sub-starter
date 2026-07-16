@@ -44,7 +44,7 @@ func main() {
 		log.Fatalf("could not declare and bind queue, %v", err)
 	}
 
-	err = pubsub.SubscribeJSON(newCon, routing.ExchangePerilTopic, routing.WarRecognitionsPrefix, routing.WarRecognitionsPrefix+".*", pubsub.Durable, handlerWar(gameState))
+	err = pubsub.SubscribeJSON(newCon, routing.ExchangePerilTopic, routing.WarRecognitionsPrefix, routing.WarRecognitionsPrefix+".*", pubsub.Durable, handlerWar(gameState, con))
 	if err != nil {
 		log.Fatalf("could not declare and bind queue, %v", err)
 	}
