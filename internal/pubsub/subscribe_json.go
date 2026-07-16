@@ -48,7 +48,6 @@ func SubscribeJSON[T any](
 			switch handle {
 			case Ack:
 				err = delivery.Ack(false)
-				log.Print("message was acknowledged")
 				if err != nil {
 					log.Printf("could not acknowledge message: %v", err)
 				}
@@ -60,7 +59,6 @@ func SubscribeJSON[T any](
 				}
 			case NackDiscard:
 				err = delivery.Nack(false, false)
-				log.Print("message was not acknowledged or requeued")
 				if err != nil {
 					log.Printf("could not discard message: %v", err)
 				}
