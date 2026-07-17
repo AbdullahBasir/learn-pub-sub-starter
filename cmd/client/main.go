@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/AbdullahBasir/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/AbdullahBasir/learn-pub-sub-starter/internal/pubsub"
@@ -68,7 +69,8 @@ func main() {
 			}
 			err = pubsub.PublishJSON(con, routing.ExchangePerilTopic, "army_moves."+username, armyMove)
 			if err != nil {
-				log.Fatal(err)
+				log.Printf("could not publish army move: %v\n", err)
+				continue
 			}
 			log.Print("The move was successfully made!\n")
 
@@ -79,7 +81,25 @@ func main() {
 			gamelogic.PrintClientHelp()
 
 		} else if words[0] == "spam" {
-			fmt.Print("Spamming not allowed yet!\n")
+			if len(words) > 1 {
+				num, err := strconv.Atoi(words[1])
+				if err != nil {
+					log.Printf("could not covert string to int: %v\n", err)
+					continue
+				}
+				for i := 0; i < num; i++ {
+					mal := gamelogic.GetMaliciousLog()
+					err = pubsub.PublishGob(con, routing.ExchangePerilTopic, routing.GameLogSlug+"."+username, mal)
+					if err != nil {
+						log.Printf("could not publish logs: %v\n", err)
+						continue
+					}
+				}
+				log.Print("log published to queue")
+
+			} else {
+				log.Print("provide a number after the spam command\n")
+			}
 
 		} else if words[0] == "quit" {
 			gamelogic.PrintQuit()

@@ -87,6 +87,17 @@ func handlerWar(gs *gamelogic.GameState, ch *amqp.Channel) func(gamelogic.Recogn
 	}
 }
 
+func handlerGameLog(logEntry routing.GameLog) pubsub.AckType {
+	defer fmt.Print("> ")
+	err := gamelogic.WriteLog(logEntry)
+	if err != nil {
+		log.Printf("could not write game log: %v", err)
+		return pubsub.NackRequeue
+	}
+	log.Print("game log was acknowledged")
+	return pubsub.Ack
+}
+
 func PublishGameLog(channel *amqp.Channel, exchange string, key string, gameLog *routing.GameLog) pubsub.AckType {
 	err := pubsub.PublishGob(channel, exchange, key, gameLog)
 	if err != nil {

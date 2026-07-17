@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/gob"
 	"fmt"
 	"log"
 
@@ -29,11 +31,15 @@ func main() {
 		log.Fatal(err)
 	}
 
-	_, queue, err := pubsub.DeclareAndBind(newCon, routing.ExchangePerilTopic, routing.GameLogSlug, routing.GameLogSlug+".*", pubsub.Durable)
+	err = pubsub.SubscribeGob(newCon, routing.ExchangePerilTopic, routing.GameLogSlug, routing.GameLogSlug+".*", pubsub.Durable, handlerGameLog, func(data []byte) (routing.GameLog, error) {
+		decoder := gob.NewDecoder(bytes.NewReader(data))
+		var message routing.GameLog
+		err := decoder.Decode(&message)
+		return message, err
+	})
 	if err != nil {
-		log.Fatalf("could not declare and bind queue, %v", err)
+		log.Fatalf("could not consume logs from gamelog: %v", err)
 	}
-	fmt.Printf("Queue %v declared and bound!\n", queue.Name)
 
 	gamelogic.PrintServerHelp()
 
